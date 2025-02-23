@@ -10,6 +10,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "hub-service": "v57/hub-service",
     "jsonwebtoken": "^9.0.2"
   }
 }
