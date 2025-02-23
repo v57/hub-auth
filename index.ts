@@ -4,4 +4,8 @@ import { Service } from 'hub-service'
 const keychain = new Keychain()
 await keychain.load()
 
-new Service().post('auth/verify', body => keychain.verify(body)).start()
+new Service()
+  .post('auth/verify', body => keychain.verify(body))
+  .post('auth/permissions/add', ({ key, permissions }) => keychain.addPermissions(key, permissions))
+  .post('auth/permissions/remove', ({ key, permissions }) => keychain.removePermissions(key, permissions))
+  .start()
