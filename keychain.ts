@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto'
+import { createHmac, verify, createPublicKey } from 'crypto'
 
 export class Keychain {
   keys: any = {}
@@ -55,10 +55,16 @@ export class Keychain {
     if (parts.length < 3) {
       return []
     }
-    const [t, id, hash, time] = parts
-    if (t === 'hmac') {
+    if (parts[0] === 'hmac') {
+      const [t, id, hash, time] = parts
       const keyInfo: Key = this.keys[`${t}.${hash}`]
       if (keyInfo && this.verifyHmac(id, hash, time, keyInfo.key)) {
+        return keyInfo.permissions
+      }
+    } else if (parts[1] === 'key') {
+      const [_, key, hash, time] = parts
+      const keyInfo: Key = this.keys[key]
+      if (keyInfo && this.verifyPub(key, time, hash)) {
         return keyInfo.permissions
       }
     }
@@ -79,6 +85,17 @@ export class Keychain {
     const expected = createHmac('sha256', key).update(data).digest('base64')
     if (hash !== expected) throw 'authorization failed'
     return id
+  }
+  private verifyPub(key: string, time: string, signature: string): boolean {
+    const pubKey = createPublicKey({
+      key: Buffer.from(key, 'base64').subarray(48, 48 + 44),
+      format: 'der',
+      type: 'spki',
+    })
+    const s = parseInt(time, 36)
+    const now = Math.round(new Date().getTime() / 1000)
+    if (s <= now) throw 'authorization expired'
+    return verify('sha256', Buffer.from(time), pubKey, Buffer.from(signature, 'base64'))
   }
 }
 
