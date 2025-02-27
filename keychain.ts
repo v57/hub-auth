@@ -64,7 +64,7 @@ export class Keychain {
     } else if (parts[1] === 'key') {
       const [_, key, hash, time] = parts
       const keyInfo: Key = this.keys[key]
-      if (keyInfo && this.verifyPub(key, time, hash)) {
+      if (keyInfo && this.verifyPub(key, hash, time)) {
         return keyInfo.permissions
       }
     }
@@ -74,6 +74,7 @@ export class Keychain {
     const hash = new Bun.SHA256().update(key.key).digest('hex')
     return `${key.type}.${hash}`
   }
+  // Can handle around 320k verifications per second
   private verifyHmac(id: string, hash: string, time: string, key: string) {
     let data = id
     if (time) {
@@ -86,9 +87,10 @@ export class Keychain {
     if (hash !== expected) throw 'authorization failed'
     return id
   }
-  private verifyPub(key: string, time: string, signature: string): boolean {
+  // Can handle around 38k verifications per second
+  private verifyPub(key: string, signature: string, time: string): boolean {
     const pubKey = createPublicKey({
-      key: Buffer.from(key, 'base64').subarray(48, 48 + 44),
+      key: Buffer.from(key, 'base64'),
       format: 'der',
       type: 'spki',
     })
