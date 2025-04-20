@@ -97,7 +97,7 @@ export class Keychain {
     const s = parseInt(time, 36)
     const now = Math.round(new Date().getTime() / 1000)
     if (s <= now) throw 'authorization expired'
-    return verify('sha256', Buffer.from(time), pubKey, Buffer.from(signature, 'base64'))
+    return verify(null, Buffer.from(time), pubKey, Buffer.from(signature, 'base64'))
   }
 }
 
