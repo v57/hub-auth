@@ -6,7 +6,7 @@ export class Keychain {
     try {
       const keys: Key[] = await Bun.file('keychain.json').json()
       for (const key of keys) {
-        this.keys[this.hashKey(key)] = key
+        this.keys[this.hashKey(key.type, key.key)] = key
       }
     } catch {}
   }
@@ -14,7 +14,7 @@ export class Keychain {
     await Bun.file('keychain.json').write(JSON.stringify(this.keys, null, 2))
   }
   async add(key: Key) {
-    this.keys[this.hashKey(key)] = key
+    this.keys[this.hashKey(key.type, key.key)] = key
     await this.save()
   }
   async remove(key: string) {
@@ -61,18 +61,19 @@ export class Keychain {
       if (keyInfo && this.verifyHmac(id, hash, time, keyInfo.key)) {
         return keyInfo.permissions
       }
-    } else if (parts[1] === 'key') {
+    } else if (parts[0] === 'key') {
       const [_, key, hash, time] = parts
-      const keyInfo: Key = this.keys[key]
+      const keyInfo: Key = this.keys[this.hashKey('key', key)]
       if (keyInfo && this.verifyPub(key, hash, time)) {
         return keyInfo.permissions
+      } else {
+        return []
       }
     }
     return []
   }
-  private hashKey(key: Key) {
-    const hash = new Bun.SHA256().update(key.key).digest('hex')
-    return `${key.type}.${hash}`
+  private hashKey(type: string, key: string) {
+    return `${type}.${key}`
   }
   // Can handle around 320k verifications per second
   private verifyHmac(id: string, hash: string, time: string, key: string) {
