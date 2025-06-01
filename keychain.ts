@@ -9,6 +9,17 @@ export class Keychain {
         this.keys[this.hashKey(key.type, key.key)] = key
       }
     } catch {}
+    const owner = Bun.env.HUBOWNER
+    if (owner) {
+      const permissions = ['owner']
+      const key: Key = { type: 'key', key: owner, permissions }
+      const id = this.hashKey('key', owner)
+      if (!this.keys[id]) {
+        this.keys[id] = key
+      } else {
+        this.addPermissions(id, permissions)
+      }
+    }
   }
   async save() {
     await Bun.file('keychain.json').write(JSON.stringify(this.keys, null, 2))
@@ -104,6 +115,6 @@ export class Keychain {
 
 interface Key {
   key: string
-  type: 'hmac'
+  type: 'hmac' | 'key'
   permissions: string[]
 }
