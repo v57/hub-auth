@@ -62,6 +62,7 @@ export class Keychain {
   }
   // Returns permissions list
   verify(data: string): { id?: string; permissions: string[] } {
+    console.log(data)
     const parts = data.split('.')
     if (parts.length < 3) {
       return { permissions: [] }
@@ -89,7 +90,7 @@ export class Keychain {
     }
   }
   private hashKey(type: string, key: string) {
-    return `${type}.${key}`
+    return new Bun.SHA256().update(`${type}.${key}`).digest('base64url')
   }
   // Can handle around 320k verifications per second
   private verifyHmac(id: string, hash: string, time: string, key: string) {
