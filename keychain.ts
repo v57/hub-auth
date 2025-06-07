@@ -62,7 +62,6 @@ export class Keychain {
   }
   // Returns permissions list
   verify(data: string): { id?: string; permissions: string[] } {
-    console.log(data)
     const parts = data.split('.')
     if (parts.length < 3) {
       return { permissions: [] }
