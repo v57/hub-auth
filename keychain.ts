@@ -61,30 +61,35 @@ export class Keychain {
     if (didRemove) await this.save()
   }
   // Returns permissions list
-  verify(data: string): string[] {
+  verify(data: string): { id?: string; permissions: string[] } {
     const parts = data.split('.')
     if (parts.length < 3) {
-      return []
+      return { permissions: [] }
     }
     if (parts[0] === 'hmac') {
-      const [t, id, hash, time] = parts
-      const keyInfo: Key = this.keys[`${t}.${hash}`]
+      const [_, id, hash, time] = parts
+      const keyId = this.hashKey('hmac', id)
+      const keyInfo: Key = this.keys[this.hashKey('hmac', id)]
       if (keyInfo && this.verifyHmac(id, hash, time, keyInfo.key)) {
-        return keyInfo.permissions
+        return { id: keyId, permissions: keyInfo.permissions }
+      } else {
+        return { id: keyId, permissions: [] }
       }
     } else if (parts[0] === 'key') {
       const [_, key, hash, time] = parts
-      const keyInfo: Key = this.keys[this.hashKey('key', key)]
+      const keyId = this.hashKey('key', key)
+      const keyInfo: Key = this.keys[keyId]
       if (keyInfo && this.verifyPub(key, hash, time)) {
-        return keyInfo.permissions
+        return { id: keyId, permissions: keyInfo.permissions }
       } else {
-        return []
+        return { id: keyId, permissions: [] }
       }
+    } else {
+      return { permissions: [] }
     }
-    return []
   }
   private hashKey(type: string, key: string) {
-    return `${type}.${key}`
+    return new Bun.SHA256().update(`${type}.${key}`).digest('base64url')
   }
   // Can handle around 320k verifications per second
   private verifyHmac(id: string, hash: string, time: string, key: string) {
