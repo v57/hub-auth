@@ -13,20 +13,20 @@ export class Keychain {
     if (owner) {
       const permissions = ['owner']
       const key: Key = { type: 'key', key: owner, permissions }
-      const id = this.hashKey('key', owner)
-      if (!this.keys[id]) {
-        this.keys[id] = key
-      } else {
-        this.addPermissions(id, permissions)
-      }
+      await this.add(key, false)
     }
   }
   async save() {
     await Bun.file('keychain.json').write(JSON.stringify(this.keys, null, 2))
   }
-  async add(key: Key) {
-    this.keys[this.hashKey(key.type, key.key)] = key
-    await this.save()
+  async add(key: Key, save: boolean = true) {
+    const id = this.hashKey(key.type, key.key)
+    if (this.keys[id]) {
+      this.addPermissions(id, key.permissions)
+    } else {
+      this.keys[id] = key
+    }
+    if (save) await this.save()
   }
   async remove(key: string) {
     delete this.keys[key]
